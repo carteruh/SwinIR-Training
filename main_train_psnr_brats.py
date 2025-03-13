@@ -5,7 +5,7 @@ import argparse
 import random
 import numpy as np
 import logging
-from torch.utils.data import DataLoader
+from torch.utils.data import TensorDataset, DataLoader, random_split
 from torch.utils.data.distributed import DistributedSampler
 import torch
 
@@ -16,6 +16,7 @@ from utils.utils_dist import get_dist_info, init_dist
 
 from data.select_dataset import define_Dataset
 from models.select_model import define_Model
+from data.dataset_LRHR import LRHRDataset
 
 
 '''
@@ -47,7 +48,7 @@ def main(json_path='options/train_msrresnet_psnr.json'):
     opt = option.parse(parser.parse_args().opt, is_train=True)
     opt['dist'] = parser.parse_args().dist
     opt['dist'] = False
-    print(opt['dist'])
+
     # ----------------------------------------
     # distributed settings
     # ----------------------------------------
@@ -107,7 +108,7 @@ def main(json_path='options/train_msrresnet_psnr.json'):
 
     '''
     # ----------------------------------------
-    # Step--2 (creat dataloader)
+    # Step--2 (create dataloader)
     # ----------------------------------------
     '''
 
@@ -115,17 +116,21 @@ def main(json_path='options/train_msrresnet_psnr.json'):
     # 1) create_dataset
     # 2) creat_dataloader for train and test
     # ----------------------------------------
+    patch_size = opt['patch_size']
+    step_size = opt['step_size']
+    brats_dataset_path = opt['dataset_path']
+    training_data = LRHRDataset(brats_dataset_path, brats_dataset_path, patch_size, step_size, opt)
+    train_set, test_set = random_split(training_data, [int(len(training_data)*0.7), len(training_data) - int(len(training_data)*0.7)])
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'train':
-            train_set = define_Dataset(dataset_opt)
             train_size = int(math.ceil(len(train_set) / dataset_opt['dataloader_batch_size']))
             if opt['rank'] == 0:
                 logger.info('Number of train images: {:,d}, iters: {:,d}'.format(len(train_set), train_size))
-            if opt['dist']:
+            if opt['dist'] == True:
                 train_sampler = DistributedSampler(train_set, shuffle=dataset_opt['dataloader_shuffle'], drop_last=True, seed=seed)
                 train_loader = DataLoader(train_set,
                                           batch_size=dataset_opt['dataloader_batch_size']//opt['num_gpu'],
-                                          shuffle=False,
+                                          shuffle=True,
                                           num_workers=dataset_opt['dataloader_num_workers']//opt['num_gpu'],
                                           drop_last=True,
                                           pin_memory=True,
@@ -139,7 +144,6 @@ def main(json_path='options/train_msrresnet_psnr.json'):
                                           pin_memory=True)
 
         elif phase == 'test':
-            test_set = define_Dataset(dataset_opt)
             test_loader = DataLoader(test_set, batch_size=1,
                                      shuffle=False, num_workers=1,
                                      drop_last=False, pin_memory=True)
@@ -165,7 +169,7 @@ def main(json_path='options/train_msrresnet_psnr.json'):
     '''
 
     for epoch in range(1000000):  # keep running
-        if opt['dist']:
+        if opt['dist'] == True:
             train_sampler.set_epoch(epoch + seed)
 
         for i, train_data in enumerate(train_loader):
@@ -226,20 +230,21 @@ def main(json_path='options/train_msrresnet_psnr.json'):
                     visuals = model.current_visuals()
                     E_img = util.tensor2uint(visuals['E'])
                     H_img = util.tensor2uint(visuals['H'])
-                    print(f'E_image: {E_img.shape}; H_Image: {H_img.shape}')
+                    # print(f'E_image: {E_img.shape}; H_Image: {H_img.shape}')
+                    if E_img.shape != H_img.shape:
+                        continue
 
                     # -----------------------
                     # save estimated image E
                     # -----------------------
                     save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, current_step))
                     util.imsave(E_img, save_img_path)
+                    print(f'save path: {save_img_path}')
 
                     # -----------------------
                     # calculate PSNR
                     # -----------------------
                     
-                    if E_img.shape != H_img.shape:
-                        continue
                     current_psnr = util.calculate_psnr(E_img, H_img, border=border)
 
                     logger.info('{:->4d}--> {:>10s} | {:<4.2f}dB'.format(idx, image_name_ext, current_psnr))

@@ -3,34 +3,30 @@
   , "model": "plain" // "plain" | "plain2" if two inputs
   , "gpu_ids": [0, 1, 2, 3, 4, 5, 6, 7]
   , "dist": true
-
+  , "patch_size": [1, 240, 240]
+  , "step_size": [1, 45, 45]
   , "scale": 2       // 2 | 3 | 4 | 8
-  , "n_channels": 3  // broadcast to "datasets", 1 for grayscale, 3 for color
+  , "n_channels": 1  // broadcast to "datasets", 1 for grayscale, 3 for color
 
   , "path": {
     "root": "superresolution"            // "denoising" | "superresolution" | "dejpeg"
     , "pretrained_netG": null      // path of pretrained model. We fine-tune X3/X4/X8 models from X2 model, so that `G_optimizer_lr` and `G_scheduler_milestones` can be halved to save time.
     , "pretrained_netE": null      // path of pretrained model
   }
-
+  , "dataset_path": "/project/tsekos/RG_MJ/brats/brats_2021"
   , "datasets": {
     "train": {
       "name": "train_dataset"           // just name
-      , "dataset_type": "sr"         // "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch" | "jpeg"
-      , "dataroot_H": "trainsets/DIV2K_train_HR"// path of H training dataset. DIV2K (800 training images)
-      , "dataroot_L": "trainsets/DIV2K/DIV2K_train_LR_bicubic/X2"              // path of L training dataset
+      , "dataset_type": "brats"         // "brats" | "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch" | "jpeg"
 
       , "H_size": 96                   // 96/144|192/384 | 128/192/256/512. LR patch size is set to 48 or 64 when compared with RCAN or RRDB.
-
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 8
       , "dataloader_batch_size": 8     // batch size 1 | 16 | 32 | 48 | 64 | 128. Total batch size =4x8=32 in SwinIR
     }
     , "test": {
       "name": "test_dataset"            // just name
-      , "dataset_type": "sr"         // "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch" | "jpeg"
-      , "dataroot_H": "testsets/Set5/original"  // path of H testing dataset
-      , "dataroot_L": "testsets/Set5/LRbicx2"              // path of L testing dataset
+      , "dataset_type": "brats"         // "brats" | "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch" | "jpeg"
 
     }
   }

@@ -9,7 +9,8 @@ class ModelBase():
     def __init__(self, opt):
         self.opt = opt                         # opt
         self.save_dir = opt['path']['models']  # save models
-        self.device = torch.device('cuda' if opt['gpu_ids'] is not None else 'cpu')
+        # self.device = torch.device('cuda' if opt['gpu_ids'] is not None else 'cpu')
+        self.device = torch.device("cpu") 
         self.is_train = opt['is_train']        # training or not
         self.schedulers = []                   # schedulers
 
@@ -187,7 +188,8 @@ class ModelBase():
     # load the state_dict of the optimizer
     # ----------------------------------------
     def load_optimizer(self, load_path, optimizer):
-        optimizer.load_state_dict(torch.load(load_path, map_location=lambda storage, loc: storage.cuda(torch.cuda.current_device())))
+        # optimizer.load_state_dict(torch.load(load_path, map_location=lambda storage, loc: storage.cuda(torch.cuda.current_device())))
+        optimizer.load_state_dict(torch.load(load_path, map_location="cpu"))
 
     def update_E(self, decay=0.999):
         netG = self.get_bare_model(self.netG)

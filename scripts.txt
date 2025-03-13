@@ -1,0 +1,24 @@
+
+# Classical/Lightweight Image SR with DIV2K (800 Training Images)
+python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 main_train_psnr.py --opt options/swinir/train_swinir_sr_classical.json  --dist True
+python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 main_train_psnr.py --opt options/swinir/train_swinir_sr_lightweight.json  --dist True
+
+# Python support scripts
+export PYTHONUSERBASE="/project/tsekos/carter_baselines/pip_user_base"
+export PIP_CACHE_DIR="/project/tsekos/carter_baselines/pip_cache"
+
+#SBATCH -J  python_job
+#SBATCH -o  python_job.o%j
+#SBATCH -t 00:01:00 
+#SBATCH -N 1 -n 28
+#SBATCH  --gpus=2
+#SBATCH -A #tsekos
+
+# Make a sh script to run commands 
+# input your command lines in the run script
+# then run sbatch <file_name>.sh
+
+Brats dataset path: /project/tsekos/RG_MJ/brats/brats2021
+
+# To check your queue in sabine run: 
+squeue --me 
